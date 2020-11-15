@@ -42,13 +42,16 @@ public class BonesSend : MonoBehaviour
         if (Model == null) {
             Animator[] avatars = FindObjectsOfType<Animator>();
             if (avatars.Length > 1) {
-                error.text = "Error: Please only put one avatar into the scene.";
+                if (error != null)
+                    error.text = "Error: Please only put one avatar into the scene.";
                 return;
             } else if (avatars.Length == 0) {
-                error.text = "Error: Please put exactly one avatar into the scene.";
+                if (error != null)
+                    error.text = "Error: Please put exactly one avatar into the scene.";
                 return;
             }
-            error.text = null;
+            if (error != null)
+                error.text = null;
             Model = avatars[0].gameObject;
         }
 
