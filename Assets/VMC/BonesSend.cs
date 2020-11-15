@@ -10,6 +10,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using VRM;
 
 [RequireComponent(typeof(uOSC.uOscClient))]
@@ -18,6 +19,7 @@ public class BonesSend : MonoBehaviour
     uOSC.uOscClient uClient = null;
 
     public GameObject Model = null;
+    public Text error;
     private GameObject OldModel = null;
 
     Animator animator = null;
@@ -33,21 +35,23 @@ public class BonesSend : MonoBehaviour
     void Start()
     {
         uClient = GetComponent<uOSC.uOscClient>();
-        if (!Model) {
-            VRMMeta[] avatars = FindObjectsOfType<VRMMeta>();
-            if (avatars.Length > 1) {
-                Debug.Log("Please only put one VRM avatar into the scene.");
-                return;
-            } else if (avatars.Length == 0) {
-                Debug.Log("Please put exactly one VRM avatar into the scene.");
-                return;
-            }
-            Model = avatars[0].gameObject;
-        }
     }
-
+    
     void Update()
     {
+        if (Model == null) {
+            Animator[] avatars = FindObjectsOfType<Animator>();
+            if (avatars.Length > 1) {
+                error.text = "Error: Please only put one avatar into the scene.";
+                return;
+            } else if (avatars.Length == 0) {
+                error.text = "Error: Please put exactly one avatar into the scene.";
+                return;
+            }
+            error.text = null;
+            Model = avatars[0].gameObject;
+        }
+
         //モデルが更新されたときのみ読み込み
         if (Model != null && OldModel != Model)
         {
