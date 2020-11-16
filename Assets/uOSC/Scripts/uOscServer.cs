@@ -7,7 +7,7 @@ namespace uOSC
 public class uOscServer : MonoBehaviour
 {
     [SerializeField]
-    int port = 3333;
+    int port = 39539;
 
 #if NETFX_CORE
     Udp udp_ = new Uwp.Udp();
