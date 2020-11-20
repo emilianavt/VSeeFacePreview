@@ -21,6 +21,9 @@ public class BonesSend : MonoBehaviour
     public GameObject Model = null;
     public Text error;
     private GameObject OldModel = null;
+    private Transform hips = null;
+    private Vector3 hipsPosition = Vector3.zero;
+    private Vector3 hipsPositionLocal = Vector3.zero;
 
     Animator animator = null;
     VRMBlendShapeProxy blendShapeProxy = null;
@@ -61,17 +64,25 @@ public class BonesSend : MonoBehaviour
             animator = Model.GetComponent<Animator>();
             blendShapeProxy = Model.GetComponent<VRMBlendShapeProxy>();
             OldModel = Model;
+            hips = animator.GetBoneTransform(HumanBodyBones.Hips);
+            if (hips != null) {
+                hipsPosition = hips.position;
+                hipsPositionLocal = hips.localPosition;
+            }
         }
 
         if (Model != null && animator != null && uClient != null)
         {
             //Root
             var RootTransform = Model.transform;
+            Vector3 pos = RootTransform.position;
+            if (hips != null)
+                pos += hips.position - hipsPosition;
             if (RootTransform != null)
             {
                 uClient.Send("/VMC/Ext/Root/Pos",
                     "root",
-                    RootTransform.position.x, RootTransform.position.y, RootTransform.position.z,
+                    pos.x, pos.y, pos.z,
                     RootTransform.rotation.x, RootTransform.rotation.y, RootTransform.rotation.z, RootTransform.rotation.w);
             }
 
@@ -83,9 +94,13 @@ public class BonesSend : MonoBehaviour
                     var Transform = animator.GetBoneTransform(bone);
                     if (Transform != null)
                     {
+                        pos = Transform.localPosition;
+                        if (bone == HumanBodyBones.Hips) {
+                            pos = hipsPositionLocal;
+                        }
                         uClient.Send("/VMC/Ext/Bone/Pos",
                             bone.ToString(),
-                            Transform.localPosition.x, Transform.localPosition.y, Transform.localPosition.z,
+                            pos.x, pos.y, pos.z,
                             Transform.localRotation.x, Transform.localRotation.y, Transform.localRotation.z, Transform.localRotation.w);
                     }
                 }
