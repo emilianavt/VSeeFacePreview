@@ -62,6 +62,8 @@ public class BonesSend : MonoBehaviour
         if (Model != null && OldModel != Model)
         {
             animator = Model.GetComponent<Animator>();
+            if (Model.GetComponent<NeuronAnimator>() == null)
+                Model.AddComponent<NeuronAnimator>();
             blendShapeProxy = Model.GetComponent<VRMBlendShapeProxy>();
             OldModel = Model;
             hips = animator.GetBoneTransform(HumanBodyBones.Hips);
