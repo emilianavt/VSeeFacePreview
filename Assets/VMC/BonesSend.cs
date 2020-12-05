@@ -21,9 +21,12 @@ public class BonesSend : MonoBehaviour
     public GameObject Model = null;
     public Text error;
     private GameObject OldModel = null;
-    private Transform hips = null;
-    private Vector3 hipsPosition = Vector3.zero;
-    private Vector3 hipsPositionLocal = Vector3.zero;
+    private Vector3 modelPos = Vector3.zero;
+    private Vector3 hipsPos = Vector3.zero;
+    private Vector3 hipsPosLocal = Vector3.zero;
+    private Quaternion modelRot = Quaternion.identity;
+    private Quaternion hipsRot = Quaternion.identity;
+    private Quaternion hipsRotLocalInv = Quaternion.identity;
 
     Animator animator = null;
     VRMBlendShapeProxy blendShapeProxy = null;
@@ -40,7 +43,7 @@ public class BonesSend : MonoBehaviour
         uClient = GetComponent<uOSC.uOscClient>();
     }
     
-    void Update()
+    void LateUpdate()
     {
         if (Model == null) {
             Animator[] avatars = FindObjectsOfType<Animator>();
@@ -56,6 +59,18 @@ public class BonesSend : MonoBehaviour
             if (error != null)
                 error.text = null;
             Model = avatars[0].gameObject;
+            
+            modelPos = Model.transform.position;
+            modelRot = Model.transform.rotation;
+            if (animator) {
+                Transform hips = animator.GetBoneTransform(HumanBodyBones.Hips);
+                if (hips != null) {
+                    hipsPos = hips.position;
+                    hipsPosLocal = hips.localPosition;
+                    hipsRot = hips.rotation;
+                    hipsRotLocalInv = Quaternion.Inverse(hips.localRotation);
+                }
+            }
         }
 
         //モデルが更新されたときのみ読み込み
@@ -64,11 +79,6 @@ public class BonesSend : MonoBehaviour
             animator = Model.GetComponent<Animator>();
             blendShapeProxy = Model.GetComponent<VRMBlendShapeProxy>();
             OldModel = Model;
-            hips = animator.GetBoneTransform(HumanBodyBones.Hips);
-            if (hips != null) {
-                hipsPosition = hips.position;
-                hipsPositionLocal = hips.localPosition;
-            }
         }
 
         if (Model != null && animator != null && uClient != null)
@@ -76,8 +86,6 @@ public class BonesSend : MonoBehaviour
             //Root
             var RootTransform = Model.transform;
             Vector3 pos = RootTransform.position;
-            if (hips != null)
-                pos += hips.position - hipsPosition;
             if (RootTransform != null)
             {
                 uClient.Send("/VMC/Ext/Root/Pos",
@@ -94,14 +102,43 @@ public class BonesSend : MonoBehaviour
                     var Transform = animator.GetBoneTransform(bone);
                     if (Transform != null)
                     {
-                        pos = Transform.localPosition;
+                        Vector3 position = Transform.localPosition;
+                        Quaternion rotation = Transform.localRotation;
+
                         if (bone == HumanBodyBones.Hips) {
-                            pos = hipsPositionLocal;
+                            // Calculate a positional offset for the hips that includes the movement of transforms between the model root and the hips, but excludes the movement of the root
+                            // First move the root back to its original position
+                            Vector3 rootPos = Model.transform.position;
+                            Model.transform.position = modelPos;
+                            // Move the hips to its original absolute position
+                            Transform.position = hipsPos;
+                            // Get its local position, which will be offset by the cumulative offsets of intermediate transforms
+                            Vector3 localHipsOrig = Transform.localPosition;
+                            // Restore the positions of hips and root
+                            Transform.localPosition = position;
+                            Model.transform.position = rootPos;
+                            // Subtract the local position offset
+                            position -= localHipsOrig - hipsPosLocal;
+                            
+                            // Do the same thing for rotation
+                            // First turn the root back to its original rotation
+                            Quaternion rootRot = Model.transform.rotation;
+                            Model.transform.rotation = modelRot;
+                            // Return the hips to its original absolute rotation
+                            Transform.rotation = hipsRot;
+                            // Get its local rotation, which will be rotated by the cumulative rotations of intermediate transforms
+                            Quaternion localHipsRotOrig = Transform.localRotation;
+                            // Restore the rotations of hips and root
+                            Transform.localRotation = rotation;
+                            Model.transform.rotation = rootRot;
+                            // Inverse rotate the local rotation difference
+                            rotation = rotation * Quaternion.Inverse(localHipsRotOrig * hipsRotLocalInv);
                         }
+                        
                         uClient.Send("/VMC/Ext/Bone/Pos",
                             bone.ToString(),
-                            pos.x, pos.y, pos.z,
-                            Transform.localRotation.x, Transform.localRotation.y, Transform.localRotation.z, Transform.localRotation.w);
+                            position.x, position.y, position.z,
+                            rotation.x, rotation.y, rotation.z, rotation.w);
                     }
                 }
             }
