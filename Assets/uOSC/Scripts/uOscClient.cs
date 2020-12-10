@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 namespace uOSC
 {
@@ -8,7 +9,6 @@ namespace uOSC
 public class uOscClient : MonoBehaviour
 {
     private const int BufferSize = 8192;
-    private const int MaxQueueSize = 100;
 
     [SerializeField]
     string address = "127.0.0.1";
@@ -23,7 +23,7 @@ public class uOscClient : MonoBehaviour
     Udp udp_ = new DotNet.Udp();
     Thread thread_ = new DotNet.Thread();
 #endif
-    Queue<object> messages_ = new Queue<object>();
+    BlockingCollection<object> messages_ = new BlockingCollection<object>(new ConcurrentQueue<object>());
     object lockObject_ = new object();
 
     void OnEnable()
@@ -43,10 +43,7 @@ public class uOscClient : MonoBehaviour
         while (messages_.Count > 0)
         {
             object message;
-            lock (lockObject_)
-            {
-                message = messages_.Dequeue();
-            }
+            message = messages_.Take();
 
             using (var stream = new MemoryStream(BufferSize))
             {
@@ -69,15 +66,7 @@ public class uOscClient : MonoBehaviour
 
     void Add(object data)
     {
-        lock (lockObject_)
-        {
-            messages_.Enqueue(data);
-
-            while (messages_.Count > MaxQueueSize)
-            {
-                messages_.Dequeue();
-            }
-        }
+        messages_.Add(data);
     }
 
     public void Send(string address, params object[] values)
