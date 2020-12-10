@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 namespace uOSC
 {
@@ -19,7 +20,7 @@ public class Parser
     public static readonly object[] EmptyObjectArray = new object[0];
 
     object lockObject_ = new object();
-    Queue<Message> messages_ = new Queue<Message>();
+    ConcurrentQueue<Message> messages_ = new ConcurrentQueue<Message>();
 
     public int messageCount
     {
@@ -37,15 +38,12 @@ public class Parser
         else
         {
             var values = ParseData(buf, ref pos);
-            lock (lockObject_)
+            messages_.Enqueue(new Message() 
             {
-                messages_.Enqueue(new Message() 
-                {
-                    address = first,
-                    timestamp = new Timestamp(timestamp),
-                    values = values
-                });
-            }
+                address = first,
+                timestamp = new Timestamp(timestamp),
+                values = values
+            });
         }
 
         if (pos != endPos)
@@ -64,10 +62,10 @@ public class Parser
             return Message.none;
         }
 
-        lock (lockObject_)
-        {
-            return messages_.Dequeue();
-        }
+        Message message;
+        if (!messages_.TryDequeue(out message))
+            return Message.none;
+        return message;
     }
 
     void ParseBundle(byte[] buf, ref int pos, int endPos)
