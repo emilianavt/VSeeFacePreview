@@ -45,6 +45,7 @@ public class BonesSend : MonoBehaviour
     
     void LateUpdate()
     {
+        uClient.Clear();
         if (Model == null) {
             Animator[] avatars = FindObjectsOfType<Animator>();
             if (avatars.Length > 1) {

@@ -69,6 +69,11 @@ public class uOscClient : MonoBehaviour
         messages_.Add(data);
     }
 
+    public void Clear()
+    {
+        while (messages_.TryTake(out _)){}
+    }
+
     public void Send(string address, params object[] values)
     {
         Send(new Message() 
