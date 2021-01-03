@@ -64,8 +64,16 @@ public class Udp : uOSC.Udp
     {
         if (state_ == State.Stop) return;
 
-        thread_.Stop();
-        udpClient_.Close();
+        if (thread_ != null)
+            thread_.Stop();
+        if (udpClient_ != null) {
+            if (udpClient_.Client != null) {
+                udpClient_.Client.Close();
+                udpClient_.Client.Dispose();
+            }
+            udpClient_.Close();
+            udpClient_.Dispose();
+        }
         state_ = State.Stop;
     }
 
