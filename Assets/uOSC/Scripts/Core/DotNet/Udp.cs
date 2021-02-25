@@ -36,7 +36,11 @@ public class Udp : uOSC.Udp
         state_ = State.Server;
 
         endPoint_ = new IPEndPoint(IPAddress.Any, port);
-        udpClient_ = new UdpClient(endPoint_);
+        var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+        socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+        socket.Bind(endPoint_);
+        udpClient_ = new UdpClient();
+        udpClient_.Client = socket;
         thread_.Start(() => 
         {
             while (udpClient_.Available > 0) 
