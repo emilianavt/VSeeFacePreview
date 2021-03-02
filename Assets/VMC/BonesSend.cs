@@ -21,6 +21,7 @@ public class BonesSend : MonoBehaviour
 
     public GameObject Model = null;
     public Text error;
+    public bool sendBundle = true;
     private GameObject OldModel = null;
     private Vector3 modelPos = Vector3.zero;
     private Vector3 hipsPos = Vector3.zero;
@@ -45,6 +46,13 @@ public class BonesSend : MonoBehaviour
         uClient = GetComponent<uOSC.uOscClient>();
     }
     
+    void SendVMC(string address, params object[] packet) {
+        if (sendBundle)
+            bundle.Add(new Message(address, packet));
+        else
+            uClient.Send(address, packet);
+    }
+
     void LateUpdate()
     {
         uClient.Clear();
@@ -94,10 +102,10 @@ public class BonesSend : MonoBehaviour
             Vector3 pos = RootTransform.position;
             if (RootTransform != null)
             {
-                bundle.Add(new Message("/VMC/Ext/Root/Pos",
+                SendVMC("/VMC/Ext/Root/Pos",
                     "root",
                     pos.x, pos.y, pos.z,
-                    RootTransform.rotation.x, RootTransform.rotation.y, RootTransform.rotation.z, RootTransform.rotation.w));
+                    RootTransform.rotation.x, RootTransform.rotation.y, RootTransform.rotation.z, RootTransform.rotation.w);
             }
 
             //Bones
@@ -141,10 +149,10 @@ public class BonesSend : MonoBehaviour
                             rotation = rotation * Quaternion.Inverse(localHipsRotOrig * hipsRotLocalInv);
                         }
                         
-                        bundle.Add(new Message("/VMC/Ext/Bone/Pos",
+                        SendVMC("/VMC/Ext/Bone/Pos",
                             bone.ToString(),
                             position.x, position.y, position.z,
-                            rotation.x, rotation.y, rotation.z, rotation.w));
+                            rotation.x, rotation.y, rotation.z, rotation.w);
                     }
                 }
             }
@@ -162,30 +170,34 @@ public class BonesSend : MonoBehaviour
             {
                 foreach (var b in blendShapeProxy.GetValues())
                 {
-                    bundle.Add(new Message("/VMC/Ext/Blend/Val",
+                    SendVMC("/VMC/Ext/Blend/Val",
                         b.Key.ToString(),
                         (float)b.Value
-                        ));
+                        );
                 }
-                bundle.Add(new Message("/VMC/Ext/Blend/Apply"));
+                SendVMC("/VMC/Ext/Blend/Apply");
             }
 
             //Available
-            bundle.Add(new Message("/VMC/Ext/OK", 1));
-            uClient.Send(bundle);
+            SendVMC("/VMC/Ext/OK", 1);
+            SendVMC("/VMC/Ext/T", Time.time);
+            if (sendBundle)
+                uClient.Send(bundle);
         }
         else
         {
-            uClient.Send("/VMC/Ext/OK", 0);
+            SendVMC("/VMC/Ext/OK", 0);
+            SendVMC("/VMC/Ext/T", Time.time);
+            if (sendBundle)
+                uClient.Send(bundle);
         }
-        uClient.Send("/VMC/Ext/T", Time.time);
     }
 
     void SendBoneTransformForTracker(HumanBodyBones bone, string DeviceSerial)
     {
         var DeviceTransform = animator.GetBoneTransform(bone);
         if (DeviceTransform != null) {
-            bundle.Add(new Message("/VMC/Ext/Tra/Pos",
+            SendVMC("/VMC/Ext/Tra/Pos",
         (string)DeviceSerial,
         (float)DeviceTransform.position.x,
         (float)DeviceTransform.position.y,
@@ -193,7 +205,7 @@ public class BonesSend : MonoBehaviour
         (float)DeviceTransform.rotation.x,
         (float)DeviceTransform.rotation.y,
         (float)DeviceTransform.rotation.z,
-        (float)DeviceTransform.rotation.w));
+        (float)DeviceTransform.rotation.w);
         }
     }
 }
