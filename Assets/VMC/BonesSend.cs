@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using VRM;
+using uOSC;
 
 [RequireComponent(typeof(uOSC.uOscClient))]
 public class BonesSend : MonoBehaviour
@@ -27,6 +28,7 @@ public class BonesSend : MonoBehaviour
     private Quaternion modelRot = Quaternion.identity;
     private Quaternion hipsRot = Quaternion.identity;
     private Quaternion hipsRotLocalInv = Quaternion.identity;
+    private uOSC.Bundle bundle;
 
     Animator animator = null;
     VRMBlendShapeProxy blendShapeProxy = null;
@@ -46,6 +48,7 @@ public class BonesSend : MonoBehaviour
     void LateUpdate()
     {
         uClient.Clear();
+        bundle = new Bundle();
         if (Model == null) {
             Animator[] avatars = FindObjectsOfType<Animator>();
             if (avatars.Length > 1) {
@@ -91,10 +94,10 @@ public class BonesSend : MonoBehaviour
             Vector3 pos = RootTransform.position;
             if (RootTransform != null)
             {
-                uClient.Send("/VMC/Ext/Root/Pos",
+                bundle.Add(new Message("/VMC/Ext/Root/Pos",
                     "root",
                     pos.x, pos.y, pos.z,
-                    RootTransform.rotation.x, RootTransform.rotation.y, RootTransform.rotation.z, RootTransform.rotation.w);
+                    RootTransform.rotation.x, RootTransform.rotation.y, RootTransform.rotation.z, RootTransform.rotation.w));
             }
 
             //Bones
@@ -138,10 +141,10 @@ public class BonesSend : MonoBehaviour
                             rotation = rotation * Quaternion.Inverse(localHipsRotOrig * hipsRotLocalInv);
                         }
                         
-                        uClient.Send("/VMC/Ext/Bone/Pos",
+                        bundle.Add(new Message("/VMC/Ext/Bone/Pos",
                             bone.ToString(),
                             position.x, position.y, position.z,
-                            rotation.x, rotation.y, rotation.z, rotation.w);
+                            rotation.x, rotation.y, rotation.z, rotation.w));
                     }
                 }
             }
@@ -159,16 +162,17 @@ public class BonesSend : MonoBehaviour
             {
                 foreach (var b in blendShapeProxy.GetValues())
                 {
-                    uClient.Send("/VMC/Ext/Blend/Val",
+                    bundle.Add(new Message("/VMC/Ext/Blend/Val",
                         b.Key.ToString(),
                         (float)b.Value
-                        );
+                        ));
                 }
-                uClient.Send("/VMC/Ext/Blend/Apply");
+                bundle.Add(new Message("/VMC/Ext/Blend/Apply"));
             }
 
             //Available
-            uClient.Send("/VMC/Ext/OK", 1);
+            bundle.Add(new Message("/VMC/Ext/OK", 1));
+            uClient.Send(bundle);
         }
         else
         {
@@ -181,7 +185,7 @@ public class BonesSend : MonoBehaviour
     {
         var DeviceTransform = animator.GetBoneTransform(bone);
         if (DeviceTransform != null) {
-            uClient.Send("/VMC/Ext/Tra/Pos",
+            bundle.Add(new Message("/VMC/Ext/Tra/Pos",
         (string)DeviceSerial,
         (float)DeviceTransform.position.x,
         (float)DeviceTransform.position.y,
@@ -189,7 +193,7 @@ public class BonesSend : MonoBehaviour
         (float)DeviceTransform.rotation.x,
         (float)DeviceTransform.rotation.y,
         (float)DeviceTransform.rotation.z,
-        (float)DeviceTransform.rotation.w);
+        (float)DeviceTransform.rotation.w));
         }
     }
 }
