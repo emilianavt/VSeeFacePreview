@@ -97,7 +97,7 @@ the file.
 Supported additional assets are:
 - Dynamic Bones
 - SPCRJointDynamics
-- Magica Cloth
+- Magica Cloth (v1.9.4)
 - uWindowCapture
 - Any regular shaders (not URP, HDRP, LWRP)
 - Most things that seemed safe and useful from Unity itself
@@ -163,10 +163,14 @@ to your avatar, there's already one set up in VSeeFace.
 * `UnityEngine.Canvas`
 * `UnityEngine.CanvasRenderer`
 * `UnityEngine.CapsuleCollider`
+* `UnityEngine.CharacterJoint`
 * `UnityEngine.Cloth`
+* `UnityEngine.ConfigurableJoint`
 * `UnityEngine.EllipsoidParticleEmitter`
+* `UnityEngine.FixedJoint`
 * `UnityEngine.FlareLayer`
 * `UnityEngine.GUILayer`
+* `UnityEngine.HingeJoint`
 * `UnityEngine.Joint`
 * `UnityEngine.Light`
 * `UnityEngine.LineRenderer`
@@ -182,6 +186,7 @@ to your avatar, there's already one set up in VSeeFace.
 * `UnityEngine.Rigidbody`
 * `UnityEngine.SkinnedMeshRenderer`
 * `UnityEngine.SphereCollider`
+* `UnityEngine.SpringJoint`
 * `UnityEngine.SpriteMask`
 * `UnityEngine.SpriteRenderer`
 * `UnityEngine.TextMesh`
